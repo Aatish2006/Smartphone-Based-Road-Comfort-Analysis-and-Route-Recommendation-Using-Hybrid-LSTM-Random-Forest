@@ -1,0 +1,77 @@
+# System Configuration for Road Comfort Analysis System
+# All hard constraints from the design spec are enforced here.
+
+system:
+  # Event-triggered inference parameters
+  trigger:
+    # Threshold: acceleration magnitude > (mu + k*sigma)
+    k_sigma: 2.5  # Fixed by spec
+    baseline_window_seconds: 300  # 5 minutes for baseline computation
+    calibration_samples: 1000  # Samples for initial baseline
+  
+  # Crowdsensing aggregation parameters
+  aggregation:
+    vehicles_per_segment: 10  # Fixed by spec: N = 10
+    min_samples_for_finalization: 3  # Finalize segment when count >= min
+    weighting_strategy: "confidence"  # "mean", "confidence", "robust"
+  
+  # Caching parameters
+  cache:
+    ttl_days: 30  # Fixed by spec: 30-day validity
+    backend: "redis"  # redis, memcached, or in-memory
+    redis_url: "${REDIS_URL}"  # Set via environment
+  
+  # Segment & routing parameters
+  segment:
+    max_segment_length_meters: 200  # Max length for a road segment
+    map_matching_radius_meters: 50  # Map-matching snap radius
+  
+  # Rate limiting & batching
+  api:
+    batch_upload_interval_seconds: 60
+    max_batch_size: 100
+    rate_limit_per_device: 100  # requests per hour
+
+sensor:
+  # Sampling rates
+  accelerometer:
+    sampling_rate_hz: 100
+    units: "m/s^2"
+  
+  gyroscope:
+    sampling_rate_hz: 100
+    units: "rad/s"
+  
+  gps:
+    sampling_rate_hz: 1
+    units: "degrees"
+  
+  # Windowing strategy
+  windowing:
+    duration_seconds: 3.0  # Default window length (triggered at anomaly + post-trigger window)
+    pre_trigger_duration_seconds: 0.5
+    post_trigger_duration_seconds: 2.5
+    resample_target_hz: 100
+
+privacy_security:
+  # Anonymization
+  anonymize_device_id: true
+  device_id_hash_salt: "${DEVICE_SALT}"
+  
+  # Data retention
+  retain_raw_data_days: 7
+  encrypt_in_transit: true
+  
+  # Opt-in policy
+  require_explicit_consent: true
+
+logging:
+  level: "INFO"
+  file: "logs/system.log"
+  max_file_size_mb: 100
+  retention_days: 30
+
+monitoring:
+  enable_metrics: true
+  prometheus_port: 9090
+  report_metrics_interval_seconds: 60

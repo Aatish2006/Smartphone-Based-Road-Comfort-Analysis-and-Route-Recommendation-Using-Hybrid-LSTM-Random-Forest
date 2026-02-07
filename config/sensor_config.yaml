@@ -1,0 +1,61 @@
+# Sensor Configuration for Mobile Clients
+
+accelerometer:
+  enabled: true
+  sampling_rate_hz: 100
+  range_g: 8.0  # Typical range for potholes
+  units: "m/s^2"
+  low_pass_filter_hz: 30  # Remove high-frequency noise
+  
+gyroscope:
+  enabled: true
+  sampling_rate_hz: 100
+  range_dps: 500  # Degrees per second
+  units: "rad/s"
+  low_pass_filter_hz: 30
+  
+gps:
+  enabled: true
+  sampling_rate_hz: 1
+  accuracy_threshold_meters: 10  # Discard poor-accuracy fixes
+  units: "decimal degrees"
+
+data_fusion:
+  # Gravity removal via sensor fusion
+  method: "complementary_filter"  # or "extended_kalman_filter"
+  fusion_rate_hz: 100
+  
+  # Coordinate alignment
+  align_to_vehicle_frame: true  # Transform NED or device frame
+
+noise_filtering:
+  # Pre-processing filters applied to raw sensor data
+  methods:
+    - "butterworth_lowpass"  # Remove high-frequency noise
+    - "median_filter"  # Spike removal
+    - "outlier_rejection"  # Discard anomalies
+  
+  outlier_threshold_std: 3.0  # Reject if > 3σ from window mean
+
+calibration:
+  # Per-device baseline calibration
+  calibration_samples: 1000
+  calibration_duration_seconds: 300
+  re_calibration_interval_minutes: 60
+  
+  # Stores device-specific μ and σ for trigger
+  store_locally: true
+  calibration_file: "calibration_data.json"
+
+mounting:
+  # Different mounts may have different sensitivity
+  # Configure per deployment
+  positions: ["dashboard", "seat", "windshield", "bumper"]
+  position_specific_scaling: true
+  
+quality_assurance:
+  # Data quality checks
+  check_completeness: true
+  min_window_samples: 200  # At 100 Hz, window >= 2 sec
+  max_allowed_gaps_ms: 50  # Max gap in stream
+  verify_gps_consistency: true

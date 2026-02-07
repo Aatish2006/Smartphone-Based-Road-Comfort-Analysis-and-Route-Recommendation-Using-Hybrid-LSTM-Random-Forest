@@ -1,0 +1,112 @@
+# Model Architecture and Hyperparameter Configuration
+
+lstm:
+  # Input configuration
+  input_features: 6  # [ax, ay, az, gx, gy, gz]
+  sequence_length: 300  # samples; at 100 Hz = 3 seconds
+  
+  # Architecture
+  num_layers: 2
+  hidden_units: [128, 64]  # Per layer
+  embedding_dim: 64  # Final encoder output dimension
+  
+  # Regularization
+  dropout_rate: 0.2
+  batch_norm: true
+  
+  # Training
+  optimizer: "Adam"
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  batch_size: 64
+  epochs: 100
+  early_stopping_patience: 15
+  validation_split: 0.15
+  
+  # Loss function (for supervised training)
+  loss_function: "cross_entropy"  # For classification; use mse for regression
+  
+  # Initialization
+  init_method: "xavier"
+
+random_forest:
+  # Input configuration
+  embedding_dim: 64  # From LSTM encoder
+  num_handcrafted_features: 24  # See feature engineering below
+  total_features: 88  # 64 + 24
+  
+  # Hyperparameters
+  n_estimators: 200
+  max_depth: 20  # Tuned via cross-validation; typically [10, 30]
+  min_samples_split: 10
+  min_samples_leaf: 5
+  max_features: "sqrt"  # Feature sampling strategy
+  
+  # Training
+  random_state: 42
+  n_jobs: -1  # Parallel tree building
+  criterion: "gini"  # For classification; use mse for regression
+  
+  # Class weighting (if imbalanced)
+  class_weight: "balanced"
+
+feature_engineering:
+  # Handcrafted features extracted per window
+  features:
+    # Statistical features (per axis + magnitude)
+    - "mean_accel_x"
+    - "mean_accel_y"
+    - "mean_accel_z"
+    - "mean_accel_magnitude"
+    - "std_accel_x"
+    - "std_accel_y"
+    - "std_accel_z"
+    - "std_accel_magnitude"
+    - "rms_accel"
+    
+    # Spectral features
+    - "spectral_energy_0_5hz"
+    - "spectral_energy_5_15hz"
+    - "spectral_energy_15_30hz"
+    - "spectral_centroid"
+    - "spectral_bandwidth"
+    
+    # Temporal dynamics
+    - "peak_count"
+    - "max_accel"
+    - "min_accel"
+    - "zero_crossing_rate"
+    
+    # Context features
+    - "vehicle_speed"
+    - "vehicle_heading"
+    - "road_grade"  # If available
+    
+  # Normalization
+  normalize: true
+  normalization_method: "standard"  # StandardScaler
+
+data_augmentation:
+  # Training-time augmentation (optional)
+  use_augmentation: true
+  techniques:
+    - "gaussian_noise"  # Add small noise
+    - "time_warping"    # DTW-based warping
+    - "magnitude_scaling"  # Scale amplitude
+  noise_std: 0.01
+
+model_export:
+  # Export formats for deployment
+  lstm_format: "onnx"  # onnx or tflite
+  rf_format: "joblib"  # joblib or onnx
+  include_normalization: true
+  target_latency_ms: 200  # Expected inference latency per window
+
+validation:
+  # Cross-validation strategy
+  strategy: "spatial"  # spatial (by segment), temporal (by date), or stratified
+  n_splits: 5
+  test_size: 0.2
+  
+  # Metrics to track
+  metrics: ["accuracy", "precision", "recall", "f1", "roc_auc", "calibration"]
